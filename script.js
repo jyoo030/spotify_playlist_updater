@@ -31,10 +31,8 @@
 
  //This allows us to pull the list of tracks inside an album https://api.spotify.com/v1/albums/{id}/tracks
  app.retrieveArtistTracks = function(artistAlbums) {
-	 	console.log(artistAlbums);
      $.when(...artistAlbums)
          .then((...albums) => {
-					 	console.log(albums);
              albumIds = albums.map(getFirstElement)
                  .map(res => res.items)
                  .reduce(flatten, [])
@@ -51,13 +49,18 @@
 	 $.when(...albumIds)
 	 	.then ((...dates)  => {
 			rel = dates.map(id => app.getAlbum(id));
-			console.log(rel);
+      app.createReleaseDate(rel);
  	});
  };
 
 //Ok on this function we should be able to finally pull the release dates
 app.createReleaseDate = function (relObjects) {
-  
+$.when(...relObjects)
+  .then((...relDate) => {
+    release = relDate.map(getFirstElement)
+    .map(rel => rel.release_date);
+    console.log(release);
+  });
 };
  //This is going to compile the playlist for us
  app.buildPlaylist = function(tracks) {
