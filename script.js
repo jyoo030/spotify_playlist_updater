@@ -19,12 +19,21 @@
 
  //Function for retrieving artist information
  app.retrieveArtistInfo = function(search) {
+   var finalList = [];
      $.when(...search)
          .then((...results) => {
              results = results.map(getFirstElement)
                  .map(res => res.artists.items[0].id)
-                 .map(id => app.getAristAlbums(id));
+                //  .map(id => app.getAristAlbums(id))
+                 .map(id => app.getAristSingles(id));
+                 finalList = results;
+                 console.log(finalList);
 
+                 //.............................................................................
+              //Right here we need to add all of them to one array. The line above this code we grab artist singles,
+              //We also have artist albums, compilations, and appears_on that we need to grab.
+              //................................................................................
+                 console.log(results.length);
              app.retrieveArtistTracks(results);
          });
  };
@@ -33,10 +42,12 @@
  app.retrieveArtistTracks = function(artistAlbums) {
      $.when(...artistAlbums)
          .then((...albums) => {
+            console.log(albums);
              albumIds = albums.map(getFirstElement)
                  .map(res => res.items)
                  .reduce(flatten, [])
 								 .map(albums => albums.id);
+                 console.log(albumIds);
 								 app.getReleaseDate(albumIds);
                 //  .map(albums => albums.id)
                 //  .map(ids => app.getArtistTracks(ids));
@@ -44,24 +55,27 @@
          });
  };
 
+//*******************************************************************************
+//Note to self: So instead of organizing just purely by date, it organizes by date within albums, then by date in singles, and etc etc.
+//In order to get around this, lets implement it so that it checks the first album which should be the most recent
+//Next, if it isn't on the same date, then move on to singles
+//This way we use less calls and the program should run faster and more efficiently.
+//*******************************************************************************
+
  //Create a function to access each album ID from the past array that we pass in
  app.getReleaseDate = function(albumIds){
 	 $.when(...albumIds)
 	 	.then ((...dates)  => {
 			rel = dates.map(id => app.getAlbum(id));
-      app.createReleaseDate(rel);
+
+   $.when(...rel)
+    .then((...relDate) => {
+      release = relDate.map(getFirstElement)
+      .map(relist => relist.release_date);
+    });
  	});
  };
 
-//Ok on this function we should be able to finally pull the release dates
-app.createReleaseDate = function (relObjects) {
-$.when(...relObjects)
-  .then((...relDate) => {
-    release = relDate.map(getFirstElement)
-    .map(rel => rel.release_date);
-    console.log(release);
-  });
-};
  //This is going to compile the playlist for us
  app.buildPlaylist = function(tracks) {
      $.when(...tracks)
@@ -81,11 +95,48 @@ $.when(...relObjects)
          });
  };
 
- // This allows us to get the albums of the artist
+ // This allows us to get the most recent album of the artist
  app.getAristAlbums = (artistId) => $.ajax({
      url: `${app.apiUrl}artists/${artistId}/albums`,
      method: 'GET',
      dataType: 'json',
+     data: {
+       album_type : 'album',
+       limit : 1
+     }
+ });
+
+ // This allows us to get the most recent single of the artist
+ app.getAristSingles = (artistId) => $.ajax({
+     url: `${app.apiUrl}artists/${artistId}/albums`,
+     method: 'GET',
+     dataType: 'json',
+     data: {
+       album_type : 'single',
+       limit : 1
+     }
+ });
+
+ // This allows us to get the most recent song that the artist appears on
+ app.getAristAppears = (artistId) => $.ajax({
+     url: `${app.apiUrl}artists/${artistId}/albums`,
+     method: 'GET',
+     dataType: 'json',
+     data: {
+       album_type : 'appears_on',
+       limit : 1
+     }
+ });
+
+ // This allows us to get the most recent compilation of the artist
+ app.getAristCompilations = (artistId) => $.ajax({
+     url: `${app.apiUrl}artists/${artistId}/albums`,
+     method: 'GET',
+     dataType: 'json',
+     data: {
+       album_type : 'compilations',
+       limit : 1
+     }
  });
 
 app.getAlbum = (albumId) => $.ajax({
